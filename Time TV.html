@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>TV Time Tracker</title>
+</head>
+<body>
+  <h1>TV Time Tracker</h1>
+  <label for="name">Name:</label>
+  <select id="name">
+    <option value="Seneth">Seneth</option>
+    <option value="Chamidu">Chamidu</option>
+  </select>
+
+  <label for="date">Date:</label>
+  <input type="date" id="date">
+
+  <label for="start-time">Start Time:</label>
+  <input type="time" id="start-time">
+
+  <label for="end-time">End Time:</label>
+  <input type="time" id="end-time">
+
+  <button onclick="saveWatchTime()">Save</button>
+
+  <h2>Saved Watch Times</h2>
+  <div id="saved-watch-times"></div>
+
+  <button onclick="deleteWatchTimes()">Delete All Saved Times</button>
+
+  <script>
+    function saveWatchTime() {
+      const nameInput = document.getElementById('name');
+      const dateInput = document.getElementById('date');
+      const startTimeInput = document.getElementById('start-time');
+      const endTimeInput = document.getElementById('end-time');
+
+      const name = nameInput.value;
+      const date = dateInput.value;
+      const startTime = new Date(`1970-01-01T${startTimeInput.value}:00`);
+      const endTime = new Date(`1970-01-01T${endTimeInput.value}:00`);
+
+      if (!name || !date || !startTime || !endTime || isNaN(startTime) || isNaN(endTime) || startTime >= endTime) {
+        alert('Please fill in all fields with valid information.');
+        return;
+      }
+
+      const totalTimeInMilliseconds = endTime - startTime;
+      const totalWatched = new Date(totalTimeInMilliseconds).toISOString().substr(11, 5);
+
+      const watchTimeData = {
+        name,
+        date,
+        startTime: startTimeInput.value,
+        endTime: endTimeInput.value,
+        totalWatched
+      };
+      const existingData = JSON.parse(localStorage.getItem('watchTimeData')) || [];
+      existingData.push(watchTimeData);
+      localStorage.setItem('watchTimeData', JSON.stringify(existingData));
+
+      // Clear the input fields after saving
+      nameInput.value = '';
+      dateInput.value = '';
+      startTimeInput.value = '';
+      endTimeInput.value = '';
+
+      // Display the saved times with sorting
+      displaySavedTimes();
+
+      alert('Watch time data saved successfully!');
+    }
+
+    function displaySavedTimes() {
+      const savedWatchTimes = JSON.parse(localStorage.getItem('watchTimeData')) || [];
+      const savedWatchTimesDiv = document.getElementById('saved-watch-times');
+
+      savedWatchTimesDiv.innerHTML = ''; // Clear the div before updating
+
+      // Create a map to group watch times by date
+      const watchTimesByDate = new Map();
+
+      savedWatchTimes.forEach(item => {
+        const date = item.date;
+        if (!watchTimesByDate.has(date)) {
+          watchTimesByDate.set(date, []);
+        }
+        watchTimesByDate.get(date).push(item);
+      });
+
+      // Sort dates in ascending order
+      const sortedDates = Array.from(watchTimesByDate.keys()).sort();
+
+      sortedDates.forEach(date => {
+        const watchTimes = watchTimesByDate.get(date);
+        const dateHeader = document.createElement('h3');
+        dateHeader.textContent = `Date: ${date}`;
+        savedWatchTimesDiv.appendChild(dateHeader);
+
+        const watchTimesList = document.createElement('ul');
+
+        watchTimes.forEach((watchTime, index) => {
+          const listItem = document.createElement('li');
+          listItem.textContent = `Name: ${watchTime.name}, Start Time: ${watchTime.startTime}, End Time: ${watchTime.endTime}, Watched Time: ${watchTime.totalWatched}`;
+
+          // Create edit button for each saved file
+          const editButton = document.createElement('button');
+          editButton.textContent = 'Edit';
+          editButton.onclick = () => editWatchTime(date, index);
+          listItem.appendChild(editButton);
+
+          watchTimesList.appendChild(listItem);
+        });
+
+        savedWatchTimesDiv.appendChild(watchTimesList);
+      });
+    }
+
+    function deleteWatchTimes() {
+      const password = prompt('Enter the password to delete all saved times:');
+      if (password === 'admin') {
+        localStorage.removeItem('watchTimeData');
+        displaySavedTimes(); // Refresh the saved times list
+        alert('All saved watch times have been deleted.');
+      } else {
+        alert('Incorrect password. Deletion canceled.');
+      }
+    }
+
+    function editWatchTime(date, index) {
+      const password = prompt('Enter the password to edit this saved time:');
+      if (password === 'admin') {
+        const savedWatchTimes = JSON.parse(localStorage.getItem('watchTimeData')) || [];
+        const watchTimes = savedWatchTimes.filter(item => item.date === date);
+        const watchTime = watchTimes[index];
+        if (watchTime) {
+          document.getElementById('name').value = watchTime.name;
+          document.getElementById('date').value = watchTime.date;
+          document.getElementById('start-time').value = watchTime.startTime;
+          document.getElementById('end-time').value = watchTime.endTime;
+          savedWatchTimes.splice(savedWatchTimes.indexOf(watchTime), 1); // Remove the saved time to be edited
+          localStorage.setItem('watchTimeData', JSON.stringify(savedWatchTimes));
+          displaySavedTimes(); // Refresh the saved times list
+          alert('You can now edit the watch time data.');
+        } else {
+          alert('Invalid index. No saved time found at the given index.');
+        }
+      } else {
+        alert('Incorrect password. Edit canceled.');
+      }
+    }
+
+    // Display saved times on page load
+    displaySavedTimes();
+  </script>
+
+<p> Made by Seneth </p>
+
+</body>
+</html>
